@@ -28,5 +28,11 @@ if __name__ == '__main__':
     binance_bot = BinanceBot()
     keyboard = Keyboard(binance_bot)
 
+    sleep(0.5)
+    print('add order: {margin/spot} {side} {symbol} {amount} {price} {TP} {SL}')
+    print('symbol info: {symbol}')
+    print('borrow USDT: borrow {symbol} {amount}')
+    print('repay USDT: repay {symbol}')
+
     while BaseClass.working():
         sleep(1)

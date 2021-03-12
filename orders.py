@@ -7,8 +7,9 @@ class MetaOrder:
         self.side = params.get('side')
         self.price = params.get('price')
         self.amount = params.get('amount')
-        self.TP = params.get('TP')
-        self.SL = params.get('SL')
+        self.trigger_down_price = params.get('trigger_down_price')
+        self.trigger_up = False
+        self.trigger_down = False
 
         cmd_list = params.get('cmd_list')
         for cmd in enumerate(cmd_list):
@@ -38,15 +39,9 @@ class MetaOrder:
                     return
             elif cmd[0] == 5:
                 try:
-                    self.TP = float(cmd[1])
+                    self.trigger_down_price = float(cmd[1])
                 except:
-                    print('wrong TP format')
-                    return
-            elif cmd[0] == 6:
-                try:
-                    self.SL = float(cmd[1])
-                except:
-                    print('wrong SL format')
+                    print('wrong trigger_down_price format')
                     return
 
         self.planned = True

@@ -19,10 +19,6 @@ class BinanceBot(LoggerSuper):
         self.botThread = threading.Thread(target=self.botThreadfunc, args=(), daemon=False)
         self.botThread.start()
         self.logger.info('bot started')
-        print('add order: {margin/spot} {side} {symbol} {amount} {price} {TP} {SL}')
-        print('symbol info: {symbol}')
-        print('borrow USDT: borrow {symbol} {amount}')
-        print('repay USDT: repay {symbol}')
 
     def botThreadfunc(self):
         while BaseClass.working():
@@ -44,13 +40,33 @@ class BinanceBot(LoggerSuper):
                 created_order = None
                 last_price = self.get_price(order.symbol)
                 if order.side == 'BUY':
-                    if order.price <= last_price < order.price*1.007:
-                        created_order = self.create_order(order.symbol, order.side, order.amount, order.market)
+                    if order.trigger_down_price is not None and order.trigger_up and last_price <= order.trigger_down_price:
+                        order.trigger_down = True
+                        self.logger.info(f'order {order} is triggered down. lets ready to buy at terget price!')
+
+                    if order.price <= last_price < order.price*1.01:
+                        if order.trigger_down_price is not None:
+                            if not order.trigger_up:
+                                order.trigger_up = True
+                                self.logger.info(f'order {order} is triggered up!')
+                            if not (order.trigger_up and order.trigger_down):
+                                return
+
+                        # сначала занимаем деньги
+                        if self.get_free_usdt(order.symbol) < order.amount * order.price*1.004:
+                            self.create_usdt_loan(order.symbol, order.amount * order.price*1.004 - self.get_free_usdt(order.symbol))
+                        # открываем ордер
+                        created_order = self.create_order(order.symbol, order.side, order.amount, order.price*1.003, order.market)
+                        self.meta_orders.remove(order)
+                        self.logger.info(f'remove planned order: {order}')
                 elif order.side == 'SELL':
-                    pass
-                if created_order is not None:
-                    self.meta_orders.remove(order)
-                    self.logger.info(f'remove planned order: {order}')
+                    if order.price >= last_price > order.price * 1.007:
+                        # открываем ордер
+                        created_order = self.create_order(order.symbol, order.side, order.amount, order.price*0.997, order.market)
+                        if created_order is not None:
+                            # возвращаем заем
+                            self.repay_usdt_loan(order.symbol, self.get_borrowed(order.symbol))
+
 
     def _get_margin_info(self):
         self.margin_info = self.client.get_isolated_margin_account()
@@ -59,33 +75,41 @@ class BinanceBot(LoggerSuper):
         self.prices = self.client.get_all_tickers()
 
     def create_usdt_loan(self, symbol, amount):
-        transaction = self.client.create_margin_loan(asset='USDT', amount=str(amount), isIsolated='TRUE', symbol=symbol)
-        self.logger.info(transaction)
+        try:
+            transaction = self.client.create_margin_loan(asset='USDT', amount=str(round(amount,2)), isIsolated='TRUE', symbol=symbol)
+            self.logger.info(transaction)
+        except Exception as ex:
+            self.logger.error(f'borrow error: {ex}')
 
     def repay_usdt_loan(self, symbol, amount):
-        transaction = self.client.repay_margin_loan(asset='USDT', amount=str(amount), isIsolated='TRUE', symbol=symbol)
-        self.logger.info(transaction)
+        try:
+            transaction = self.client.repay_margin_loan(asset='USDT', amount=str(round(amount,2)), isIsolated='TRUE', symbol=symbol)
+            self.logger.info(transaction)
+        except Exception as ex:
+            self.logger.error(f'repay error: {ex}')
 
-    def create_order(self, symbol, side, amount, market='spot'):
+    def create_order(self, symbol, side, amount, price, market='spot'):
         try:
             if market == 'margin':
                 order = self.client.create_margin_order(
                     symbol=symbol.upper(),
                     side=side.upper(),
-                    type='MARKET',
-                    timeInForce='GTC',
+                    type='LIMIT',
                     quantity=amount,
-                     isIsolated='TRUE')
+                    timeInForce='GTC',
+                    price=str(price),
+                    isIsolated='TRUE')
             else:
                 order = self.client.create_order(
                     symbol=symbol.upper(),
                     side=side.upper(),
-                    type='MARKET',
+                    type='LIMIT',
+                    price=str(price),
                     quantity=amount)
             self.logger.info(order)
             return order
         except Exception as ex:
-            self.logger.error(ex)
+            self.logger.error(f'open order error: {ex}')
 
     def orders(self):
         if len(self.meta_orders) > 0:
@@ -111,11 +135,11 @@ class BinanceBot(LoggerSuper):
         else:
             return None
 
-    def get_free_usdt(self, pair, asset_param = 'quoteAsset'):
-        if isinstance(self.margin_info, dict) and isinstance(pair, str):
+    def get_free_usdt(self, symbol, asset_param = 'quoteAsset'):
+        if isinstance(self.margin_info, dict) and isinstance(symbol, str):
             assets = self.margin_info['assets']
             for asset in assets:
-                if asset['symbol'] == pair.upper():
+                if asset['symbol'] == symbol.upper():
                     return float(asset[asset_param]['free'])
         else:
             return None
@@ -127,12 +151,17 @@ class BinanceBot(LoggerSuper):
         if cmd_list[0] == 'borrow':
             if len(cmd_list) != 3:
                 print('wrong format. ex.: borrow btcusdt 30000')
+                return
             symbol = cmd_list[1]
             amount = cmd_list[2]
             self.create_usdt_loan(symbol, amount)
-        if cmd_list[0] == 'repay':
+        elif cmd_list[0] == 'delete':
+            self.meta_orders = []
+            print('all orders deleted')
+        elif cmd_list[0] == 'repay':
             if len(cmd_list) != 2:
                 print('wrong format. ex.: repay btcusdt')
+                return
             symbol = cmd_list[1]
             self.repay_usdt_loan(symbol, self.get_borrowed(symbol))
         elif len(cmd_list) == 1:
@@ -146,6 +175,7 @@ class BinanceBot(LoggerSuper):
                     print(f'{symbol}: price {price}. Borrowed {borrowed} USDT.')
                 else:
                     print('wrong pair')
+                    return
         else:
             meta_order = MetaOrder(cmd_list = cmd_list)
             if meta_order.inited:

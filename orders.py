@@ -1,7 +1,6 @@
 class MetaOrder:
     def __init__(self, **params):
         self.inited = False
-        self.id = params.get('id')
         self.market = params.get('market')
         self.symbol = params.get('symbol')
         self.side = params.get('side')
@@ -10,6 +9,7 @@ class MetaOrder:
         self.trigger_down_price = params.get('trigger_down_price')
         self.trigger_up = False
         self.trigger_down = False
+        self.TP = params.get('TP')
 
         cmd_list = params.get('cmd_list')
         for cmd in enumerate(cmd_list):
@@ -39,25 +39,23 @@ class MetaOrder:
                     return
             elif cmd[0] == 5:
                 try:
-                    self.trigger_down_price = float(cmd[1])
+                    if cmd[1] != 'None':
+                        self.trigger_down_price = float(cmd[1])
+                    else:
+                        self.trigger_down_price = None
                 except:
                     print('wrong trigger_down_price format')
                     return
-
-        self.planned = True
+            elif cmd[0] == 6:
+                try:
+                    if cmd[1] != 'None':
+                        self.TP = float(cmd[1])
+                    else:
+                        self.TP = None
+                except:
+                    print('wrong TP format')
+                    return
         self.inited = True
 
     def __str__(self):
-        planned = ''
-        if self.planned:
-            planned = 'PLANNED '
-        id = ''
-        if self.id is not None:
-            id = f'ID {self.id}: '
-        return f'{planned}{id}{self.market} {self.side} {self.symbol} amount {self.amount} price {self.price} TP {self.TP} SL {self.SL}'
-
-    def __eq__(self, other):
-        if isinstance(other, str):
-            return self.id == other or self.planned == other
-        else:
-            return self.id == other['orderId']
+        return f'{self.market} {self.side} {self.symbol} amount {self.amount} price {self.price} trigger down price {self.trigger_down_price} TP {self.TP}'

@@ -7,7 +7,7 @@ from datetime import datetime
 
 
 if __name__ == '__main__':
-    WRITE_LOG_TO_FILE = False
+    WRITE_LOG_TO_FILE = True
     DEBUG_MODE = False
 
     LOG_FORMAT = '%(name)s (%(levelname)s) %(asctime)s: %(message)s'
@@ -29,10 +29,11 @@ if __name__ == '__main__':
     keyboard = Keyboard(binance_bot)
 
     sleep(0.5)
-    print('add order: {margin/spot} {side} {symbol} {amount} {price} {TP} {SL}')
+    print('for add order type: {margin/spot} {side} {symbol} {amount} {price} {trigger_down_price} {TP}')
     print('symbol info: {symbol}')
-    print('borrow USDT: borrow {symbol} {amount}')
-    print('repay USDT: repay {symbol}')
+    print('borrow USDT: borrow {amount}')
+    print('repay USDT: repay')
+    print('free USDT: free')
 
     while BaseClass.working():
         sleep(1)

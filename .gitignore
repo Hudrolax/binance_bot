@@ -129,4 +129,6 @@ dmypy.json
 .pyre/
 
 log*.txt
+db.txt
 env.py
+/.idea

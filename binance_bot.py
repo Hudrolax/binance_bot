@@ -51,7 +51,7 @@ class BinanceBot(LoggerSuper):
         try:
             foo()
         except Exception as Ex:
-            self.logger.error(Ex)
+            self.logger.debug(Ex)
 
     def check_and_place_orders(self):
         for order in self.meta_orders:
@@ -104,14 +104,14 @@ class BinanceBot(LoggerSuper):
             transaction = self.client.create_margin_loan(asset='USDT', amount=str(round(amount,2)))
             self.logger.info(transaction)
         except Exception as ex:
-            self.logger.error(f'borrow error: {ex}')
+            self.logger.critical(f'borrow error: {ex}')
 
     def repay_usdt_loan(self, amount):
         try:
             transaction = self.client.repay_margin_loan(asset='USDT', amount=str(round(amount,2)))
             self.logger.info(transaction)
         except Exception as ex:
-            self.logger.error(f'repay error: {ex}')
+            self.logger.critical(f'repay error: {ex}')
 
     def create_order(self, symbol, side, amount, price, market='spot'):
         try:
@@ -133,7 +133,7 @@ class BinanceBot(LoggerSuper):
             self.logger.info(order)
             return order
         except Exception as ex:
-            self.logger.error(f'open order error: {ex}')
+            self.logger.critical(f'open order error: {ex}')
 
     def orders(self):
         if len(self.meta_orders) > 0:

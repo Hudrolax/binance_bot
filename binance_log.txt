@@ -1,6 +1,0 @@
-BinanceBot (INFO) 12/03/21 11:25:15: bot started
-Keyboard (INFO) 12/03/21 11:25:15: start keyboard thread
-BinanceBot (INFO) 12/03/21 11:25:33: bot started
-Keyboard (INFO) 12/03/21 11:25:33: start keyboard thread
-BinanceBot (INFO) 12.03.21 11:30:25: bot started
-Keyboard (INFO) 12.03.21 11:30:25: start keyboard thread

@@ -71,7 +71,7 @@ class BinanceBot(LoggerSuper):
                             continue
 
                     # сначала занимаем деньги
-                    if self.get_free_usdt() < order.amount * order.price*1.004:
+                    if order.market == 'margin' and self.get_free_usdt() < order.amount * order.price*1.004:
                         self.create_usdt_loan(order.amount * order.price*1.004 - self.get_free_usdt())
                     # открываем ордер
                     created_order = self.create_order(order.symbol, order.side, order.amount, order.price*1.003, order.market)
@@ -185,7 +185,12 @@ class BinanceBot(LoggerSuper):
         elif cmd_list[0] == 'repay':
             self.repay_usdt_loan(self.get_borrowed())
         elif cmd_list[0] == 'free':
-            print(f'{self.get_free_usdt()} USDT')
+            in_meta = 0
+            for order in self.meta_orders:
+                if order.side.upper() == 'BUY':
+                    in_meta += order.amount * order.price*1.003
+            binance_free = self.get_free_usdt()
+            print(f'Binance {round(binance_free,2)} USDT free. In meta orders {round(in_meta,2)} USDT. Total free is {round(binance_free - in_meta, 2)} USDT.')
         elif len(cmd_list) == 1:
             if cmd_list[0] == 'orders':
                 self.orders()

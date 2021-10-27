@@ -1,0 +1,16 @@
+{
+  "orders": [
+    {
+      "original_order": null,
+      "TP": 0,
+      "original_price": 3.12e-05,
+      "original_amount": 30,
+      "TP_order": null,
+      "SL": 0,
+      "SL_order": null,
+      "market": "limit",
+      "breakeven": false,
+      "margin": false
+    }
+  ]
+}
